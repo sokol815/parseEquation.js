@@ -1,19 +1,9 @@
 # mathParser.js
 A general math parser for javascript
 
-supports: (each group is a separate order-of-operations priority descending)
- parentheses
- 
- exponents
- 
- division
- multiplication
- modulus
- 
- dice rolls
- 
- addition
- subtraction
+supports: parentheses / exponents / division, multiplication, modulus / dice rolls / addition, subtraction.
+
+PEMDAS order is followed... modulus is weighted the same as division and multiplication, dice rolls are between division/multiplication/modulus and addition/subtraction.
  
 
 usage:
