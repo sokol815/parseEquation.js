@@ -1,4 +1,4 @@
-# mathParser.js
+# parseEquation.js
 A general math parser for javascript
 
 supports: parentheses / exponents / division, multiplication, modulus / dice rolls / addition, subtraction.
