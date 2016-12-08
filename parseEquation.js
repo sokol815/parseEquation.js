@@ -1,8 +1,8 @@
+//we need to sanitize and array-itize this input string!
+/*e.g. '2*4-6' would become: [2,'*',4,'-',6]
+'(4*-2)^4' would become: [[4,'*',-2],'^',4]
+*/
 Acc = {
-	/*random function
-	0 args - passthrough of math.random
-	1 arg  - [0,n) (exclusive of n)
-	2 args - [a,b] (inclusive of both) */
 	rand: function() {
 		if(arguments.length===0) {
 			return Math.random();
@@ -16,13 +16,10 @@ Acc = {
 			}
 			arguments[1]++;
 			return Math.floor(Math.random() * (arguments[1] - arguments[0])) + arguments[0];
-		}
-	},
 
-	//we need to sanitize and array-itize this input string!
-	/*e.g. '2*4-6' would become: [2,'*',4,'-',6]
-	'(4*-2)^4' would become: [[4,'*',-2],'^',4]
-	*/
+		}
+
+	},
 	interpretArithmeticString: function( input ) {
 		var temp = [];
 		var curInput = '';
@@ -36,6 +33,7 @@ Acc = {
 						curInput += input[i];
 					}
 					break;
+				case '!': temp.push('!'); break;
 				case '+': temp.push('+'); break;
 				case '*': temp.push('*'); break;
 				case '/': temp.push('/'); break;
@@ -71,7 +69,7 @@ Acc = {
 					if( '0123456789\.'.indexOf(input[i]) > -1 ) {
 						curInput += input[i];
 					}
-					if( input.length == i+1 || '-+*/%^d()'.indexOf(input[i+1]) > -1 ) {
+					if( input.length == i+1 || '-+*/%^d()!'.indexOf(input[i+1]) > -1 ) {
 						temp.push(curInput);
 						curInput = '';
 					}
@@ -82,7 +80,7 @@ Acc = {
 
 		return temp;
 	},
-
+	factorialCache: {},
 	parseEquation: function( input, mode ) {
 		if ( mode == undefined ) {
 			mode = 'normal';
@@ -118,6 +116,7 @@ Acc = {
 						case '*': curWeight = 3; break;
 						case '%': curWeight = 3; break;
 						case '^': curWeight = 4; break;
+						case '!': curWeight = 5; break;
 						default: console.warn( 'unweighted operator', input[i] ); break;
 					}
 					if( curWeight > highestWeight ) {
@@ -126,19 +125,32 @@ Acc = {
 					}
 				}
 			}
-			if( highestIndex < 1 || highestIndex > input.length - 2 ) {
+			// functions take 1 input!
+			var isFunction = ('!'.indexOf(input[highestIndex]) > -1);
+			if( highestIndex < 1 || ( highestIndex > input.length - 2 && !isFunction )) {
 				console.warn('likely bad input... failing gracefully', JSON.stringify(input));
 				return input[0]; //probably bad input... fail gracefully.
 			}
 
 			// --- switch highestIndex to the first element we will need
 			highestIndex--;
-			var outsect = input.splice(highestIndex,3);
+			var outsect = input.splice( highestIndex, isFunction ? 2 : 3 );
 			var a = outsect[0];
 			var b = outsect[2];
 			var operation = outsect[1];
 			var result = 0;
 			switch( operation ) {
+				case '!':
+					if( this.factorialCache[a] != undefined ) {
+						result = this.factorialCache[a];
+						break;
+					}
+					result = a;
+					for( var i = a-1; i > 1; i-- ) {
+						result *= i;
+					}
+					this.factorialCache[a] = result;
+					break;
 				case '+': result = a + b; break;
 				case '-': result = a - b; break;
 				case '/': result = a / b; break;
@@ -162,4 +174,4 @@ Acc = {
 		}
 		return input[0];
 	}
-};
+}
