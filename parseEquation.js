@@ -84,6 +84,8 @@ Acc = {
 	parseEquation: function( input, mode ) {
 		if ( mode == undefined ) {
 			mode = 'normal';
+		} else {
+			mode = mode.toLowerCase();
 		}
 		if( typeof input == 'string' ) {
 			input = this.interpretArithmeticString( input );
@@ -117,6 +119,7 @@ Acc = {
 						case '%': curWeight = 3; break;
 						case '^': curWeight = 4; break;
 						case '!': curWeight = 5; break;
+						case 'log': curWeight = 5; break;
 						default: console.warn( 'unweighted operator', input[i] ); break;
 					}
 					if( curWeight > highestWeight ) {
@@ -126,20 +129,33 @@ Acc = {
 				}
 			}
 			// functions take 1 input!
-			var isFunction = ('!'.indexOf(input[highestIndex]) > -1);
-			if( highestIndex < 1 || ( highestIndex > input.length - 2 && !isFunction )) {
-				console.warn('likely bad input... failing gracefully', JSON.stringify(input));
+			var isFunction = (['!','log'].indexOf(input[highestIndex]) > -1);
+			if(( highestIndex < 1 && !isFunction) || ( highestIndex > input.length - 2 && !isFunction )) {
+				console.warn('likely bad input... failing gracefully', JSON.stringify(input),highestIndex, isFunction);
 				return input[0]; //probably bad input... fail gracefully.
 			}
-
+			var a,b,outsect,operation;
 			// --- switch highestIndex to the first element we will need
-			highestIndex--;
-			var outsect = input.splice( highestIndex, isFunction ? 2 : 3 );
-			var a = outsect[0];
-			var b = outsect[2];
-			var operation = outsect[1];
+			if( isFunction ) {
+				outsect = input.splice( highestIndex, 2 );
+				a = outsect[1];
+				operation = outsect[0];
+			} else {
+				highestIndex--;
+				outsect = input.splice( highestIndex, 3 );
+				a = outsect[0];
+				b = outsect[2];
+				operation = outsect[1];
+			}
+
 			var result = 0;
 			switch( operation ) {
+				case 'log':
+					result = Math.log( a );
+					if( result == -Infinity ) {
+						result = 0;
+					}
+					break;
 				case '!':
 					if( this.factorialCache[a] != undefined ) {
 						result = this.factorialCache[a];
@@ -160,11 +176,21 @@ Acc = {
 				case 'd':
 					var dice = a;
 					var sides = b;
-					for(var i = 0; i < dice;i++){
-						switch(mode){
-							case 'normal': result+=(Acc.rand(1,sides)); break;
-							case 'max':    result+= sides;              break;
-							case 'min':    result+= 1;                  break;
+					if( dice < 0 ) {
+						for( var i = 0; i < Math.abs(dice); i++ ) {
+							switch( mode ){
+								case 'normal': result-=(Acc.rand(1,sides)); break;
+								case 'max':    result-= Math.min(sides,1);  break;
+								case 'min':    result-= Math.max(sides,1);  break;
+							}
+						}
+					} else {
+						for( var i = 0; i < dice; i++ ) {
+							switch( mode ){
+								case 'normal': result+=(Acc.rand(1,sides)); break;
+								case 'max':    result+= Math.max(sides,1);  break;
+								case 'min':    result+= Math.min(sides,1);  break;
+							}
 						}
 					}
 				break;
